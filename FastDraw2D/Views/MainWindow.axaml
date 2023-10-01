@@ -1,0 +1,18 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:FastDraw2D.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:rendering="clr-namespace:FastDraw2D.Rendering"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="FastDraw2D.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Width="1200" Height="800"
+        WindowStartupLocation="CenterScreen"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="FastDraw2D">
+  <DockPanel>
+    <Rectangle Fill="LightGray" Height="30" HorizontalAlignment="Stretch" DockPanel.Dock="Top" />
+    <rendering:CachedDrawControl />
+  </DockPanel>
+</Window>
