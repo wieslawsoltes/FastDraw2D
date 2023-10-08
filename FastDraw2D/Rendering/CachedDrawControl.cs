@@ -16,7 +16,7 @@ public class CachedDrawControl : TemplatedControl
     private Point _start;
     private bool _pressed;
     private Point _diff;
-    private readonly double _zoomRatio = 1.2;
+    private readonly double _zoomRatio = 1.05;
 
     public CachedDrawControl()
 	{
