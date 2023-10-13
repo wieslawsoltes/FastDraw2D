@@ -1,0 +1,3 @@
+[submodule "external/netDxf"]
+	path = external/netDxf
+	url = https://github.com/wieslawsoltes/netDxf.git

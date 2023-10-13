@@ -2,6 +2,12 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FastDraw2D", "FastDraw2D\FastDraw2D.csproj", "{91FEB9A2-489E-48E8-93D4-F38E67018465}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "external", "external", "{5F067E60-D7CE-45C8-96F0-BB1BB5FC1DD9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "netDxf", "external\netDxf\netDxf\netDxf.csproj", "{80F92F3E-8548-411A-8506-67426C11CB57}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestDxfDocument", "external\netDxf\TestDxfDocument\TestDxfDocument.csproj", "{880247D7-6231-4BCF-9EEB-DE2E129A38A5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +18,17 @@ Global
 		{91FEB9A2-489E-48E8-93D4-F38E67018465}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{91FEB9A2-489E-48E8-93D4-F38E67018465}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{91FEB9A2-489E-48E8-93D4-F38E67018465}.Release|Any CPU.Build.0 = Release|Any CPU
+		{80F92F3E-8548-411A-8506-67426C11CB57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80F92F3E-8548-411A-8506-67426C11CB57}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80F92F3E-8548-411A-8506-67426C11CB57}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80F92F3E-8548-411A-8506-67426C11CB57}.Release|Any CPU.Build.0 = Release|Any CPU
+		{880247D7-6231-4BCF-9EEB-DE2E129A38A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{880247D7-6231-4BCF-9EEB-DE2E129A38A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{880247D7-6231-4BCF-9EEB-DE2E129A38A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{880247D7-6231-4BCF-9EEB-DE2E129A38A5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{80F92F3E-8548-411A-8506-67426C11CB57} = {5F067E60-D7CE-45C8-96F0-BB1BB5FC1DD9}
+		{880247D7-6231-4BCF-9EEB-DE2E129A38A5} = {5F067E60-D7CE-45C8-96F0-BB1BB5FC1DD9}
 	EndGlobalSection
 EndGlobal
