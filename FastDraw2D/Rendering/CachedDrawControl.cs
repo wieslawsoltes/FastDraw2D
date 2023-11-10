@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
@@ -16,7 +17,7 @@ public class CachedDrawControl : TemplatedControl
     private Point _start;
     private bool _pressed;
     private Point _diff;
-    private readonly double _zoomRatio = 1.05;
+    private readonly double _zoomRatio = 1.15;
 
     public CachedDrawControl()
 	{
@@ -81,6 +82,8 @@ public class CachedDrawControl : TemplatedControl
         }
     }
 
+    private HashSet<double> _zoomStates = new();
+    
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
     {
         base.OnPointerWheelChanged(e);
@@ -92,6 +95,8 @@ public class CachedDrawControl : TemplatedControl
         transform = transform.PostConcat(SKMatrix.CreateTranslation((float)-x, (float)-y));
         transform = transform.PostConcat(SKMatrix.CreateScale((float)zoom, (float)zoom));
         transform = transform.PostConcat(SKMatrix.CreateTranslation((float)x, (float)y));
+        _zoomStates.Add(transform.ScaleX);
+        Console.WriteLine($"Zoom {transform.ScaleX}, States count: {_zoomStates.Count}");
         _state.SetTransform(transform);
 
         InvalidateVisual();
