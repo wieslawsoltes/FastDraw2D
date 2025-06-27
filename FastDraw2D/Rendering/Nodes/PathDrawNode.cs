@@ -24,8 +24,9 @@ public class PathDrawNode : DrawNode
         _path.Reset();
     }
 
-    public override void Draw(SKCanvas canvas)
+    public override void Draw(SKCanvas canvas, double zoom)
     {
+        _paint.StrokeWidth = (float)(2 / zoom);
         canvas.DrawPath(_path, _paint);
     }
 
