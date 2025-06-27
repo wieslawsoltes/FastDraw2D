@@ -10,13 +10,13 @@ namespace FastDraw2D.Rendering;
 
 public class CachedDrawState
 {
-    private readonly Action<SKCanvas, Rect> _draw;
+    private readonly Action<SKCanvas, Rect, double> _draw;
 	private SKSurface? _surface;
 	private Rect _bounds;
 	private SKPicture? _picture;
     private SKMatrix _matrix;
 
-    public CachedDrawState(Rect bounds, Action<SKCanvas, Rect> draw)
+    public CachedDrawState(Rect bounds, Action<SKCanvas, Rect, double> draw)
 	{
 		_bounds = bounds;
         _draw = draw;
@@ -39,16 +39,16 @@ public class CachedDrawState
         _matrix = matrix;
     }
 
-	public void Render(DrawingContext context)
+	public void Render(DrawingContext context, double zoom)
 	{
-		var custom = new CachedDrawDrawOperation(_bounds, Draw);
+		var custom = new CachedDrawDrawOperation(_bounds, Draw, zoom);
 
 		context.Custom(custom);
 	}
 
     private double _zoom = 0.0;
 
-	private void Draw(ISkiaSharpApiLease skia, Rect bounds)
+	private void Draw(ISkiaSharpApiLease skia, Rect bounds, double zoom)
 	{
         if (bounds.Width <= 0 || bounds.Height <= 0)
         {
@@ -62,7 +62,7 @@ public class CachedDrawState
 
         if (_picture is null)
         {
-            Record(bounds);
+            Record(bounds, zoom);
             _surface.Canvas.DrawPicture(_picture);
         }
         
@@ -109,12 +109,12 @@ public class CachedDrawState
         }
     }
 
-    private void Record(Rect bounds)
+    private void Record(Rect bounds, double zoom)
 	{
 		var recorder = new SKPictureRecorder();
 		var rect = new SKRect(0f, 0f, (float)bounds.Width, (float)bounds.Height);
 		var canvas = recorder.BeginRecording(rect);
-		_draw(canvas, bounds);
+		_draw(canvas, bounds, zoom);
 		_picture = recorder.EndRecording();
 	}
 }

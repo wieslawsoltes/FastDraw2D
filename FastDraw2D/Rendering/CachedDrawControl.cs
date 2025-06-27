@@ -19,7 +19,12 @@ public class CachedDrawControl : TemplatedControl
     private Point _start;
     private bool _pressed;
     private Point _diff;
-    private readonly double _zoomRatio = 1.15;
+
+    private HashSet<double> _zoomStates = new();
+    private const double _baseZoomFactor = 1.15;
+    private const int _minZoomLevel = -20;
+    private const int _maxZoomLevel = 40;
+    private int _currentZoomLevel = 0;
 
     public CachedDrawControl()
 	{
@@ -30,7 +35,7 @@ public class CachedDrawControl : TemplatedControl
 	{
 		base.Render(context);
 
-		_state.Render(context);
+		_state.Render(context, _state.Transform.ScaleX);
 	}
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -84,23 +89,35 @@ public class CachedDrawControl : TemplatedControl
         }
     }
 
-    private HashSet<double> _zoomStates = new();
-    
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
     {
         base.OnPointerWheelChanged(e);
 
-        var (x, y) = e.GetPosition(this);
+        var position = e.GetPosition(this);
 
-        var zoom = e.Delta.Y > 0 ? _zoomRatio : 1 / _zoomRatio;
-        var transform = _state.Transform;
-        transform = transform.PostConcat(SKMatrix.CreateTranslation((float)-x, (float)-y));
-        transform = transform.PostConcat(SKMatrix.CreateScale((float)zoom, (float)zoom));
-        transform = transform.PostConcat(SKMatrix.CreateTranslation((float)x, (float)y));
+        int zoomDelta = e.Delta.Y > 0 ? 1 : -1;
+        int newZoomLevel = Math.Clamp(_currentZoomLevel + zoomDelta, _minZoomLevel, _maxZoomLevel);
+
+        if (newZoomLevel == _currentZoomLevel)
+            return; // Reached zoom limit, no further action
+
+        _currentZoomLevel = newZoomLevel;
+
+        double zoomFactor = Math.Pow(_baseZoomFactor, _currentZoomLevel);
+
+        // Reset and build transform deterministically from the zoom factor
+        var transform = SKMatrix.CreateIdentity();
+
+        // Centered scaling around cursor position
+        transform = transform.PostConcat(SKMatrix.CreateTranslation((float)-position.X, (float)-position.Y));
+        transform = transform.PostConcat(SKMatrix.CreateScale((float)zoomFactor, (float)zoomFactor));
+        transform = transform.PostConcat(SKMatrix.CreateTranslation((float)position.X, (float)position.Y));
+        
         _zoomStates.Add(transform.ScaleX);
-        Console.WriteLine($"Zoom {transform.ScaleX}, States count: {_zoomStates.Count}");
-        _state.SetTransform(transform);
+        Console.WriteLine($"Zoom Level: {_currentZoomLevel}, Zoom Factor: {zoomFactor:F4}, States count: {_zoomStates.Count}");
 
+        _state.SetTransform(transform);
+        
         InvalidateVisual();
     }
 
@@ -142,7 +159,7 @@ public class CachedDrawControl : TemplatedControl
         }
     }
 
-    private void Draw(SKCanvas canvas, Rect bounds)
+    private void Draw(SKCanvas canvas, Rect bounds, double zoom)
     {
         canvas.Save();
         canvas.Clear(SKColors.White);
@@ -151,7 +168,7 @@ public class CachedDrawControl : TemplatedControl
         {
             foreach (var node in _nodes)
             {
-                node.Draw(canvas);
+                node.Draw(canvas, zoom);
             }
         }
 
