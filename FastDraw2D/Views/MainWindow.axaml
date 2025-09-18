@@ -3,7 +3,7 @@
         xmlns:vm="using:FastDraw2D.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:rendering="clr-namespace:FastDraw2D.Rendering"
+        xmlns:rendering="clr-namespace:FastDraw2D.Rendering;assembly=FastDraw2D.Rendering"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="FastDraw2D.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"

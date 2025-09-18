@@ -11,11 +11,13 @@ namespace FastDraw2D.Rendering;
 
 public class CachedDrawDrawOperation : ICustomDrawOperation
 {
-	private readonly Action<ISkiaSharpApiLease, Rect> _draw;
+	private readonly Action<ISkiaSharpApiLease, Rect, double> _draw;
+    private readonly double _zoom;
 
-	public CachedDrawDrawOperation(Rect bounds, Action<ISkiaSharpApiLease, Rect> draw)
+	public CachedDrawDrawOperation(Rect bounds, Action<ISkiaSharpApiLease, Rect, double> draw, double zoom)
 	{
 		_draw = draw;
+        _zoom = zoom;
 		Bounds = new Rect(0, 0, bounds.Width, bounds.Height);
 	}
 
@@ -37,6 +39,6 @@ public class CachedDrawDrawOperation : ICustomDrawOperation
 		{
 			return;
 		}
-		_draw(skia, Bounds);
+		_draw(skia, Bounds, _zoom);
 	}
 }

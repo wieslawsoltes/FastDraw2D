@@ -18,8 +18,12 @@ public class CachedDrawControl : TemplatedControl
     private List<DrawNode>? _nodes;
     private Point _start;
     private bool _pressed;
-    private Point _diff;
-    private readonly double _zoomRatio = 1.15;
+
+    private HashSet<double> _zoomStates = new();
+    private const double _baseZoomFactor = 1.15;
+    private const int _minZoomLevel = -20;
+    private const int _maxZoomLevel = 40;
+    private int _currentZoomLevel = 0;
 
     public CachedDrawControl()
 	{
@@ -30,7 +34,7 @@ public class CachedDrawControl : TemplatedControl
 	{
 		base.Render(context);
 
-		_state.Render(context);
+		_state.Render(context, _state.Transform.ScaleX);
 	}
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -43,7 +47,6 @@ public class CachedDrawControl : TemplatedControl
 
             CreateNodes(bounds);
             
-            _diff = new Point();
             _state.SetTransform(SKMatrix.Identity);
             _state.Invalidate(bounds);
             InvalidateVisual();
@@ -84,23 +87,57 @@ public class CachedDrawControl : TemplatedControl
         }
     }
 
-    private HashSet<double> _zoomStates = new();
-    
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
     {
         base.OnPointerWheelChanged(e);
 
-        var (x, y) = e.GetPosition(this);
+        var position = e.GetPosition(this);
 
-        var zoom = e.Delta.Y > 0 ? _zoomRatio : 1 / _zoomRatio;
+        int zoomDelta = e.Delta.Y > 0 ? 1 : -1;
+        int newZoomLevel = Math.Clamp(_currentZoomLevel + zoomDelta, _minZoomLevel, _maxZoomLevel);
+
+        if (newZoomLevel == _currentZoomLevel)
+        {
+            return;
+        }
+
+        double previousZoom = Math.Pow(_baseZoomFactor, _currentZoomLevel);
+        _currentZoomLevel = newZoomLevel;
+        double newZoom = Math.Pow(_baseZoomFactor, _currentZoomLevel);
+        double scaleDelta = newZoom / previousZoom;
+
+        var cursor = new SKPoint((float)position.X, (float)position.Y);
         var transform = _state.Transform;
-        transform = transform.PostConcat(SKMatrix.CreateTranslation((float)-x, (float)-y));
-        transform = transform.PostConcat(SKMatrix.CreateScale((float)zoom, (float)zoom));
-        transform = transform.PostConcat(SKMatrix.CreateTranslation((float)x, (float)y));
-        _zoomStates.Add(transform.ScaleX);
-        Console.WriteLine($"Zoom {transform.ScaleX}, States count: {_zoomStates.Count}");
-        _state.SetTransform(transform);
 
+        var currentScaleX = transform.ScaleX;
+        var currentScaleY = transform.ScaleY;
+
+        if (Math.Abs(currentScaleX) < 1e-6f)
+        {
+            currentScaleX = 1.0f;
+        }
+
+        if (Math.Abs(currentScaleY) < 1e-6f)
+        {
+            currentScaleY = 1.0f;
+        }
+
+        var pivot = new SKPoint(
+            (cursor.X - transform.TransX) / currentScaleX,
+            (cursor.Y - transform.TransY) / currentScaleY);
+
+        var zoomMatrix = SKMatrix.CreateIdentity();
+        zoomMatrix = zoomMatrix.PostConcat(SKMatrix.CreateTranslation(-pivot.X, -pivot.Y));
+        zoomMatrix = zoomMatrix.PostConcat(SKMatrix.CreateScale((float)scaleDelta, (float)scaleDelta));
+        zoomMatrix = zoomMatrix.PostConcat(SKMatrix.CreateTranslation(pivot.X, pivot.Y));
+
+        transform = transform.PostConcat(zoomMatrix);
+
+        _zoomStates.Add(transform.ScaleX);
+        Console.WriteLine($"Zoom Level: {_currentZoomLevel}, Zoom Factor: {newZoom:F4}, States count: {_zoomStates.Count}");
+
+        _state.SetTransform(transform);
+        
         InvalidateVisual();
     }
 
@@ -116,7 +153,15 @@ public class CachedDrawControl : TemplatedControl
 
             for (var i = 0; i < 10_000; i++)
             {
-                var node = new PathDrawNode();
+                var path = new SKPath();
+                var paint = new SKPaint
+                {
+                    Color = SKColors.Black,
+                    IsAntialias = false,
+                    Style = SKPaintStyle.Stroke,
+                    StrokeWidth = 2
+                };
+                var node = new PathDrawNode(path, paint);
                 _nodes.Add(node);
             }
         }
@@ -142,7 +187,7 @@ public class CachedDrawControl : TemplatedControl
         }
     }
 
-    private void Draw(SKCanvas canvas, Rect bounds)
+    private void Draw(SKCanvas canvas, Rect bounds, double zoom)
     {
         canvas.Save();
         canvas.Clear(SKColors.White);
@@ -151,7 +196,7 @@ public class CachedDrawControl : TemplatedControl
         {
             foreach (var node in _nodes)
             {
-                node.Draw(canvas);
+                node.Draw(canvas, zoom);
             }
         }
 
