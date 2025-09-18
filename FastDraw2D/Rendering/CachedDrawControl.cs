@@ -18,7 +18,6 @@ public class CachedDrawControl : TemplatedControl
     private List<DrawNode>? _nodes;
     private Point _start;
     private bool _pressed;
-    private Point _diff;
 
     private HashSet<double> _zoomStates = new();
     private const double _baseZoomFactor = 1.15;
@@ -48,7 +47,6 @@ public class CachedDrawControl : TemplatedControl
 
             CreateNodes(bounds);
             
-            _diff = new Point();
             _state.SetTransform(SKMatrix.Identity);
             _state.Invalidate(bounds);
             InvalidateVisual();
@@ -99,22 +97,44 @@ public class CachedDrawControl : TemplatedControl
         int newZoomLevel = Math.Clamp(_currentZoomLevel + zoomDelta, _minZoomLevel, _maxZoomLevel);
 
         if (newZoomLevel == _currentZoomLevel)
-            return; // Reached zoom limit, no further action
+        {
+            return;
+        }
 
+        double previousZoom = Math.Pow(_baseZoomFactor, _currentZoomLevel);
         _currentZoomLevel = newZoomLevel;
+        double newZoom = Math.Pow(_baseZoomFactor, _currentZoomLevel);
+        double scaleDelta = newZoom / previousZoom;
 
-        double zoomFactor = Math.Pow(_baseZoomFactor, _currentZoomLevel);
+        var cursor = new SKPoint((float)position.X, (float)position.Y);
+        var transform = _state.Transform;
 
-        // Reset and build transform deterministically from the zoom factor
-        var transform = SKMatrix.CreateIdentity();
+        var currentScaleX = transform.ScaleX;
+        var currentScaleY = transform.ScaleY;
 
-        // Centered scaling around cursor position
-        transform = transform.PostConcat(SKMatrix.CreateTranslation((float)-position.X, (float)-position.Y));
-        transform = transform.PostConcat(SKMatrix.CreateScale((float)zoomFactor, (float)zoomFactor));
-        transform = transform.PostConcat(SKMatrix.CreateTranslation((float)position.X, (float)position.Y));
-        
+        if (Math.Abs(currentScaleX) < 1e-6f)
+        {
+            currentScaleX = 1.0f;
+        }
+
+        if (Math.Abs(currentScaleY) < 1e-6f)
+        {
+            currentScaleY = 1.0f;
+        }
+
+        var pivot = new SKPoint(
+            (cursor.X - transform.TransX) / currentScaleX,
+            (cursor.Y - transform.TransY) / currentScaleY);
+
+        var zoomMatrix = SKMatrix.CreateIdentity();
+        zoomMatrix = zoomMatrix.PostConcat(SKMatrix.CreateTranslation(-pivot.X, -pivot.Y));
+        zoomMatrix = zoomMatrix.PostConcat(SKMatrix.CreateScale((float)scaleDelta, (float)scaleDelta));
+        zoomMatrix = zoomMatrix.PostConcat(SKMatrix.CreateTranslation(pivot.X, pivot.Y));
+
+        transform = transform.PostConcat(zoomMatrix);
+
         _zoomStates.Add(transform.ScaleX);
-        Console.WriteLine($"Zoom Level: {_currentZoomLevel}, Zoom Factor: {zoomFactor:F4}, States count: {_zoomStates.Count}");
+        Console.WriteLine($"Zoom Level: {_currentZoomLevel}, Zoom Factor: {newZoom:F4}, States count: {_zoomStates.Count}");
 
         _state.SetTransform(transform);
         

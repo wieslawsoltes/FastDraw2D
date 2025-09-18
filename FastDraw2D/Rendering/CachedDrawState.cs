@@ -11,10 +11,10 @@ namespace FastDraw2D.Rendering;
 public class CachedDrawState
 {
     private readonly Action<SKCanvas, Rect, double> _draw;
-	private SKSurface? _surface;
 	private Rect _bounds;
 	private SKPicture? _picture;
     private SKMatrix _matrix;
+    private double? _cachedZoom;
 
     public CachedDrawState(Rect bounds, Action<SKCanvas, Rect, double> draw)
 	{
@@ -28,10 +28,9 @@ public class CachedDrawState
     public void Invalidate(Rect bounds)
     {
         _bounds = bounds;
-        _surface?.Dispose();
         _picture?.Dispose();
-        _surface = null;
         _picture = null;
+        _cachedZoom = null;
     }
 
     public void SetTransform(SKMatrix matrix)
@@ -46,68 +45,40 @@ public class CachedDrawState
 		context.Custom(custom);
 	}
 
-    private double _zoom = 0.0;
-
-	private void Draw(ISkiaSharpApiLease skia, Rect bounds, double zoom)
+    private void Draw(ISkiaSharpApiLease skia, Rect bounds, double zoom)
 	{
         if (bounds.Width <= 0 || bounds.Height <= 0)
         {
             return;
         }
 
-        if (_surface is null)
+        var requiresRedraw =
+            _picture is null ||
+            !_cachedZoom.HasValue ||
+            Math.Abs(_cachedZoom.Value - zoom) > 1e-6;
+
+        if (requiresRedraw)
         {
-            CreateSurface(skia, bounds);
+            Record(bounds, zoom);
+
+            if (_picture is null)
+            {
+                return;
+            }
+            _cachedZoom = zoom;
         }
 
         if (_picture is null)
         {
-            Record(bounds, zoom);
-            _surface.Canvas.DrawPicture(_picture);
+            return;
         }
-        
-        if (_zoom != _matrix.ScaleX)
-        {
-            _zoom = _matrix.ScaleX;
-            //Record(bounds);
-            //_surface.Canvas.Save();
-            //_surface.Canvas.Translate(_matrix.TransX, _matrix.TransY);
-            //_surface.Canvas.Scale(_matrix.ScaleX, _matrix.ScaleY);
-            //_surface.Canvas.DrawPicture(_picture);
-            //_surface.Canvas.Restore();
-		}
-
-		using var snapshot = _surface.Snapshot();
 
         skia.SkCanvas.Save();
-        skia.SkCanvas.Translate(_matrix.TransX, _matrix.TransY);
-        skia.SkCanvas.Scale(_matrix.ScaleX, _matrix.ScaleY);
-		skia.SkCanvas.DrawImage(
-            snapshot,
-			new SKRect(0, 0, (float)bounds.Width, (float)bounds.Height),
-			new SKRect(0, 0, (float)bounds.Width, (float)bounds.Height));
+        var transform = _matrix;
+        skia.SkCanvas.Concat(ref transform);
+        skia.SkCanvas.DrawPicture(_picture);
         skia.SkCanvas.Restore();
 	}
-
-    private void CreateSurface(ISkiaSharpApiLease skia, Rect bounds)
-    {
-        if (skia.GrContext is not null)
-        {
-            _surface = SKSurface.Create(
-                skia.GrContext,
-                false,
-                new SKImageInfo((int)bounds.Width, (int)bounds.Width));
-        }
-        else
-        {
-            _surface = SKSurface.Create(
-                new SKImageInfo(
-                    (int)Math.Ceiling(bounds.Width),
-                    (int)Math.Ceiling(bounds.Width),
-                    SKImageInfo.PlatformColorType,
-                    SKAlphaType.Premul));
-        }
-    }
 
     private void Record(Rect bounds, double zoom)
 	{
@@ -115,6 +86,7 @@ public class CachedDrawState
 		var rect = new SKRect(0f, 0f, (float)bounds.Width, (float)bounds.Height);
 		var canvas = recorder.BeginRecording(rect);
 		_draw(canvas, bounds, zoom);
+		_picture?.Dispose();
 		_picture = recorder.EndRecording();
 	}
 }
