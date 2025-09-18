@@ -153,7 +153,15 @@ public class CachedDrawControl : TemplatedControl
 
             for (var i = 0; i < 10_000; i++)
             {
-                var node = new PathDrawNode();
+                var path = new SKPath();
+                var paint = new SKPaint
+                {
+                    Color = SKColors.Black,
+                    IsAntialias = false,
+                    Style = SKPaintStyle.Stroke,
+                    StrokeWidth = 2
+                };
+                var node = new PathDrawNode(path, paint);
                 _nodes.Add(node);
             }
         }
